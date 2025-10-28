@@ -101,7 +101,7 @@ During the Workshop:
 
 3. **Verify app is working:** Visit http://localhost:5000/tasks - you should see sample tasks.
 
-4. **Configure your AI tool rules:** Rename and move CONDING_STANDARDS.md file to become AI rule file:
+4. **Configure your AI tool rules:** Rename and move `CODING_STANDARDS.md` file to become AI rule file:
 
    - Claude Code → `CLAUDE.md`
    - GitHub Copilot → `.github/copilot-instructions.md`
@@ -119,3 +119,4 @@ Great! Open `WORKSHOP_TASKS.md` and start with Task 1, Part A.
 ---
 
 **Happy coding with AI! 🤖✨**
+

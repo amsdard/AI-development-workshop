@@ -329,13 +329,44 @@ In such case commands/workflows can be real time-savers.
 
 <details>
 <summary><strong>Claude Code</strong></summary>
-NOT WORKING
+1. Create file `.claude/hooks.json`
+2. Paste following content:
+   ```
+   "enableAllProjectMcpServers": true,
+   "hooks": {
+      "PostToolUse": [
+         {
+            "matcher": "Edit",
+            "hooks": [
+               {
+                  "type": "command",
+                  "command": "black ."
+               },
+               {
+                  "type": "command",
+                  "command": "isort ."
+               }
+            ]
+         }
+      ],
+      "PreToolUse": [
+         {
+            "matcher": "Bash",
+            "hooks": [
+               {
+                  "type": "command",
+                  "command": "./hooks/block-rm.sh"
+               },
+            ]
+      ]
+   }
+   ```
 </details>
 
 <details>
 <summary><strong>Cursor</strong></summary>
 
-1. Create file `.cursor/hooks.json`
+1. Create file `.cursor/hooks.json` inside your **user directory** (`C:/Users/username/.cursor` or `~/.cursor`)
 2. Paste following content:
    ```
    {
@@ -351,17 +382,19 @@ NOT WORKING
       ],
       "beforeShellExecution": [
          {
-            "command": "./block-rm.sh"
+            "command": "./hooks/block-rm.sh"
          }
       ]
    }
    }
    ```
-3. Now each time when the model creates or updates a Python file, it will be automatically formatted. Also, when the agent tries to run commands: `rm`, `del` or `Remove-Item`, the operation will be blocked.
-
 </details>
+3. Create `hooks` directory in the same place as `hooks.json` file. Move script `block-rm.sh` there
+4. Restart your IDE
+5. Now each time when the model creates or updates a Python file, it will be automatically formatted. Also, when the agent tries to run commands: `rm`, `del` or `Remove-Item`, the operation will be blocked.
 
-**Note:** Hooks are optional but save time. Skip this step if you encounter issues.
+
+**Note:** Hooks are new features. Skip this step if you encounter issues
 
 ### Step 4: Push changes to new branch with Github MCP Server
 
@@ -713,3 +746,4 @@ You've learned to:
 - Use MCP servers
 
 Take these skills to your own projects! 🚀
+

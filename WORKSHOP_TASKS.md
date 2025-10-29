@@ -329,7 +329,7 @@ In such case commands/workflows can be real time-savers.
 
 <details>
 <summary><strong>Claude Code</strong></summary>
-1. Create file `.claude/hooks.json`
+1. Create file `.claude/settings.json`
 2. Paste following content:
    ```
    {
@@ -781,5 +781,6 @@ You've learned to:
 - Use MCP servers
 
 Take these skills to your own projects! 🚀
+
 
 

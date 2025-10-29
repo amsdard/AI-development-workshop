@@ -364,38 +364,6 @@ In such case commands/workflows can be real time-savers.
        }
      }
    ```
-
-   
-   ```
-   "enableAllProjectMcpServers": true,
-   "hooks": {
-      "PostToolUse": [
-         {
-            "matcher": "Edit",
-            "hooks": [
-               {
-                  "type": "command",
-                  "command": "black ."
-               },
-               {
-                  "type": "command",
-                  "command": "isort ."
-               }
-            ]
-         }
-      ],
-      "PreToolUse": [
-         {
-            "matcher": "Bash",
-            "hooks": [
-               {
-                  "type": "command",
-                  "command": "./hooks/block-rm.sh"
-               },
-            ]
-      ]
-   }
-   ```
 </details>
 
 <details>
@@ -469,7 +437,7 @@ Follow the [instruction](https://docs.github.com/en/authentication/keeping-your-
 
 1. Add following line to `.claude/settings.json`: `"enableAllProjectMcpServers": true`
 2. Create file `.mcp.json` in project root
-3.  Copy-paste the content. Replace <YOUR_GITHUB_TOKEN> with generated token:
+3. Copy-paste the content. Replace <YOUR_GITHUB_TOKEN> with generated token:
     ```
     {
        "mcpServers": {
@@ -782,6 +750,7 @@ You've learned to:
 - Use MCP servers
 
 Take these skills to your own projects! 🚀
+
 
 
 

@@ -101,12 +101,8 @@ During the Workshop:
 
 3. **Verify app is working:** Visit http://localhost:5000/tasks - you should see sample tasks.
 
-4. **Configure your AI tool rules:** Rename and move `CODING_STANDARDS.md` file to become AI rule file:
-
-   - Claude Code → `CLAUDE.md`
-   - GitHub Copilot → `.github/copilot-instructions.md`
-   - Cursor → `.cursor/rules/rules.md`
-   - Other tools → Copy the appropriate rule file to your tool's config
+4. **Configure your AI tool rules:** Ask you agent to create rules with specific command (`/init` for Claude Code and `/Generate Cursor Rules` for Cursor) using `CODING_STANDARDS.md` file.
+In case of Github Copilot or other tool you can copy content of `CODING_STANDARDS.md` into new file: `.github/copilot-instructions.md` or appropraite for you tool.
 
 ## 🚦 Ready to Start?
 
@@ -119,4 +115,5 @@ Great! Open `WORKSHOP_TASKS.md` and start with Task 1, Part A.
 ---
 
 **Happy coding with AI! 🤖✨**
+
 

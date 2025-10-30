@@ -1,0 +1,174 @@
+# Cursor Rules for AI Development Workshop
+
+## Project Overview
+This is a TaskFlow API migration project with both Python (Flask → FastAPI) and Node.js (JavaScript → TypeScript) implementations. The project follows modern coding standards with strict type safety, validation, and security practices.
+
+## Language-Specific Rules
+
+### Python (FastAPI)
+- **ALWAYS** use type hints for all function parameters and return types
+- **ALWAYS** use Pydantic models for data validation and serialization
+- **ALWAYS** use async/await patterns for database operations
+- **ALWAYS** use parameterized SQL queries to prevent SQL injection
+- **ALWAYS** use FastAPI's APIRouter instead of Flask's @app.route
+- **ALWAYS** use HTTPException for proper error handling with status codes
+- **ALWAYS** use environment variables instead of hardcoded values
+- **NEVER** use string concatenation for SQL queries
+- **NEVER** use blocking database calls in async functions
+
+### TypeScript/JavaScript (Node.js)
+- **ALWAYS** use TypeScript with strict type annotations
+- **ALWAYS** define interfaces for all data models
+- **ALWAYS** use async/await instead of callbacks
+- **ALWAYS** use Zod for runtime validation
+- **ALWAYS** use parameterized SQL queries
+- **ALWAYS** use modern ES6+ import/export syntax
+- **NEVER** use var declarations (use const/let)
+- **NEVER** use string concatenation for SQL queries
+
+## Code Structure Rules
+
+### File Organization
+- Models go in `models/` directory
+- Services (business logic) go in `services/` directory  
+- Routes (API endpoints) go in `routes/` directory
+- Database configuration goes in root or `db.py`/`db.js`
+
+### Migration Order
+When working on files, follow this order:
+1. Models (data structures and validation)
+2. Services (business logic)
+3. Routes (API endpoints)
+4. Infrastructure (database, config)
+
+### Naming Conventions
+**Python:**
+- `snake_case` for functions and variables
+- `PascalCase` for classes
+- `UPPER_CASE` for constants
+
+**TypeScript/JavaScript:**
+- `camelCase` for functions and variables
+- `PascalCase` for classes and interfaces
+- `UPPER_CASE` for constants
+
+## Security Rules
+- **NEVER** hardcode passwords, API keys, or sensitive data
+- **ALWAYS** use environment variables for configuration
+- **ALWAYS** validate all input data using Pydantic/Zod schemas
+- **ALWAYS** use parameterized queries to prevent SQL injection
+- **ALWAYS** handle errors gracefully without exposing internal details
+
+## Error Handling Rules
+- **ALWAYS** use proper HTTP status codes:
+  - 200 OK for successful GET/PUT
+  - 201 Created for successful POST
+  - 204 No Content for successful DELETE
+  - 400 Bad Request for validation errors
+  - 404 Not Found for missing resources
+  - 500 Internal Server Error for server errors
+- **ALWAYS** log errors with appropriate detail
+- **ALWAYS** return meaningful error messages to clients
+
+## Validation Rules
+- **ALWAYS** validate input data at API boundaries
+- **ALWAYS** use field validation (min/max length, required fields, etc.)
+- **ALWAYS** handle validation errors with proper HTTP status codes
+- **ALWAYS** use type-safe validation schemas
+
+## Database Rules
+- **ALWAYS** use async database operations
+- **ALWAYS** use connection pooling or context managers
+- **ALWAYS** handle database errors gracefully
+- **ALWAYS** use transactions for multi-step operations
+- **NEVER** expose raw database errors to clients
+
+## Testing Requirements
+When creating or modifying code, ensure:
+- Happy path scenarios (valid input)
+- Validation error scenarios (invalid input)
+- Not found scenarios (missing resources)
+- Edge cases (empty strings, null values, boundary conditions)
+- Error handling scenarios
+
+## Code Quality Rules
+- **ALWAYS** write self-documenting code with clear variable names
+- **ALWAYS** add docstrings/comments for complex business logic
+- **ALWAYS** keep functions focused and single-purpose
+- **ALWAYS** use meaningful error messages
+- **NEVER** leave TODO comments in production code
+- **NEVER** use magic numbers or strings
+
+## API Design Rules
+- **ALWAYS** use RESTful conventions
+- **ALWAYS** return consistent response formats
+- **ALWAYS** use proper HTTP methods (GET, POST, PUT, DELETE)
+- **ALWAYS** include proper response models
+- **ALWAYS** handle pagination for list endpoints
+- **ALWAYS** use proper content types (application/json)
+
+## Performance Rules
+- **ALWAYS** use async/await for I/O operations
+- **ALWAYS** implement proper database indexing
+- **ALWAYS** use connection pooling
+- **ALWAYS** implement proper caching where appropriate
+- **NEVER** use blocking operations in async functions
+
+## When Making Changes
+1. **ALWAYS** read the existing code first to understand the current patterns
+2. **ALWAYS** follow the established file structure and naming conventions
+3. **ALWAYS** ensure type safety and validation
+4. **ALWAYS** test your changes thoroughly
+5. **ALWAYS** update related files if changing interfaces or models
+6. **ALWAYS** maintain backward compatibility when possible
+
+## Common Patterns to Follow
+
+### Python FastAPI Pattern
+```python
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Optional
+
+router = APIRouter()
+
+class TaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+@router.post("/tasks", response_model=Task)
+async def create_task(task_data: TaskCreate):
+    try:
+        task = await task_service.create_task(task_data)
+        return task
+    except Exception as e:
+        logger.error(f"Error creating task: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+```
+
+### TypeScript Express Pattern
+```typescript
+import express, { Request, Response } from 'express';
+import { z } from 'zod';
+
+const router = express.Router();
+
+const taskCreateSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+});
+
+router.post('/tasks', async (req: Request, res: Response) => {
+  try {
+    const data = taskCreateSchema.parse(req.body);
+    const task = await taskService.createTask(data);
+    res.status(201).json(task);
+  } catch (error) {
+    console.error('Error creating task:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+Remember: This is a migration project focused on modernizing legacy code. Always prioritize type safety, security, and maintainability over quick fixes.
+

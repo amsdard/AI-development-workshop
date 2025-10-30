@@ -329,39 +329,76 @@ In such case commands/workflows can be real time-savers.
 
 <details>
 <summary><strong>Claude Code</strong></summary>
-NOT WORKING
+   
+1. Create file `.claude/settings.json`
+2. Paste following content:
+   ```
+   {
+     "hooks": {
+        "PostToolUse": [
+           {
+             "matcher": "Edit",
+             "hooks": [
+               {
+                 "type": "command",
+                 "command": "black ."
+               },
+               {
+                 "type": "command",
+                 "command": "isort ."
+               },
+             ]
+           }
+         ],
+         "PreToolUse": [
+           {
+             "matcher": "Bash",
+             "hooks": [
+               {
+                 "type": "command",
+                 "command": "./hooks/block-rm.sh"
+               }
+             ]
+           }
+         ]
+       }
+     }
+   ```
 </details>
 
 <details>
 <summary><strong>Cursor</strong></summary>
 
-1. Create file `.cursor/hooks.json`
+1. Create file `.cursor/hooks.json` inside your **user directory** (`C:/Users/username/.cursor` or `~/.cursor`)
 2. Paste following content:
    ```
    {
-   "version": 1,
-   "hooks": {
-      "afterFileEdit": [
-         {
-         "command": "black ."
-         },
-         {
-         "command": "isort ."
-         }
-      ],
-      "beforeShellExecution": [
-         {
-            "command": "./block-rm.sh"
-         }
-      ]
-   }
+     "version": 1,
+     "hooks": {
+        "afterFileEdit": [
+           {
+           "command": "black ."
+           },
+           {
+           "command": "isort ."
+           }
+        ],
+        "beforeShellExecution": [
+           {
+              "command": "./hooks/block-rm.sh"
+           }
+        ]
+     }
    }
    ```
-3. Now each time when the model creates or updates a Python file, it will be automatically formatted. Also, when the agent tries to run commands: `rm`, `del` or `Remove-Item`, the operation will be blocked.
-
 </details>
 
-**Note:** Hooks are optional but save time. Skip this step if you encounter issues.
+3. Create `hooks` directory in the same place as `hooks.json` file. Move script `block-rm.sh` there
+4. Restart your IDE
+5. Now each time when the model creates or updates a Python file, it will be automatically formatted. Also, when the agent tries to run commands: `rm`, `del` or `Remove-Item`, the operation will be blocked.
+
+
+*Note: Hooks are new features. Skip this step if you encounter issues*
 
 ### Step 4: Push changes to new branch with Github MCP Server
 
@@ -400,7 +437,7 @@ Follow the [instruction](https://docs.github.com/en/authentication/keeping-your-
 
 1. Add following line to `.claude/settings.json`: `"enableAllProjectMcpServers": true`
 2. Create file `.mcp.json` in project root
-3.  Copy-paste the content. Replace <YOUR_GITHUB_TOKEN> with generated token:
+3. Copy-paste the content. Replace <YOUR_GITHUB_TOKEN> with generated token:
     ```
     {
        "mcpServers": {
@@ -713,3 +750,8 @@ You've learned to:
 - Use MCP servers
 
 Take these skills to your own projects! 🚀
+
+
+
+
+

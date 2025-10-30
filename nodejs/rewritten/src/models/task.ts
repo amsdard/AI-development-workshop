@@ -241,55 +241,6 @@ export class TaskModel {
     return this.findAll({ ...filters, priority });
   }
 
-  async findOverdue(days: number = 0, filters: Omit<TaskFilters, 'status'> = {}): Promise<Task[]> {
-    try {
-      const now = new Date();
-      const cutoffDate = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
-      
-      let query = `
-        SELECT *, 
-        (julianday(?) - julianday(due_date)) as days_overdue
-        FROM tasks 
-        WHERE deleted_at IS NULL 
-        AND due_date < ? 
-        AND status != 'completed'
-      `;
-      
-      const params: (string | number)[] = [now.toISOString(), cutoffDate.toISOString()];
-
-      if (filters.user_id) {
-        query += ' AND user_id = ?';
-        params.push(filters.user_id);
-      }
-      
-      if (filters.priority) {
-        query += ' AND priority = ?';
-        params.push(filters.priority);
-      }
-
-      query += ' ORDER BY due_date ASC';
-
-      if (filters.limit) {
-        query += ' LIMIT ?';
-        params.push(filters.limit);
-      }
-      
-      if (filters.offset) {
-        query += ' OFFSET ?';
-        params.push(filters.offset);
-      }
-
-      const stmt = this.db.prepare(query);
-      const rows = stmt.all(...params) as any[];
-
-      return rows.map(row => ({
-        ...this.mapRowToTask(row),
-        days_overdue: Math.floor(row.days_overdue || 0)
-      } as Task & { days_overdue: number }));
-    } catch (error) {
-      throw new Error(`Failed to find overdue tasks: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
 
   async delete(taskId: number): Promise<boolean> {
     try {
@@ -363,6 +314,84 @@ export class TaskModel {
   static toSafeObject(task: Task): Omit<Task, 'deleted_at'> {
     const { deleted_at, ...safeTask } = task;
     return safeTask;
+  }
+
+  /**
+   * Find overdue tasks with pagination and days filtering
+   */
+  async findOverdue(days: number = 0, limit: number = 10, offset: number = 0): Promise<Task[]> {
+    try {
+      const now = new Date();
+      let cutoffDate: Date;
+
+      if (days > 0) {
+        // If days specified: due_date < now() - days
+        cutoffDate = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
+      } else {
+        // If days = 0: due_date < now()
+        cutoffDate = now;
+      }
+
+      const query = `
+        SELECT * FROM tasks 
+        WHERE deleted_at IS NULL 
+          AND status != 'completed'
+          AND due_date IS NOT NULL
+          AND due_date < ?
+        ORDER BY due_date ASC
+        LIMIT ? OFFSET ?
+      `;
+
+      const stmt = this.db.prepare(query);
+      const rows = stmt.all(cutoffDate.toISOString(), limit, offset) as any[];
+
+      return rows.map(row => this.mapRowToTask(row));
+    } catch (error) {
+      throw new Error(`Failed to find overdue tasks: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Count total overdue tasks for pagination
+   */
+  async countOverdue(days: number = 0): Promise<number> {
+    try {
+      const now = new Date();
+      let cutoffDate: Date;
+
+      if (days > 0) {
+        // If days specified: due_date < now() - days
+        cutoffDate = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
+      } else {
+        // If days = 0: due_date < now()
+        cutoffDate = now;
+      }
+
+      const query = `
+        SELECT COUNT(*) as total FROM tasks 
+        WHERE deleted_at IS NULL 
+          AND status != 'completed'
+          AND due_date IS NOT NULL
+          AND due_date < ?
+      `;
+
+      const stmt = this.db.prepare(query);
+      const result = stmt.get(cutoffDate.toISOString()) as { total: number };
+      
+      return result.total;
+    } catch (error) {
+      throw new Error(`Failed to count overdue tasks: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Calculate days overdue for a task
+   */
+  static calculateDaysOverdue(dueDate: Date): number {
+    const now = new Date();
+    const diffTime = now.getTime() - new Date(dueDate).getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays); // Ensure non-negative
   }
 
   close(): void {

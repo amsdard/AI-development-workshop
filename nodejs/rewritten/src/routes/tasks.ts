@@ -44,6 +44,19 @@ const TaskQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
+// Schema for overdue tasks query parameters
+const OverdueTasksQuerySchema = z.object({
+  days: z.string().regex(/^\d+$/).transform(Number).refine(val => val >= 0, {
+    message: "Days must be non-negative"
+  }).optional().default('0'),
+  limit: z.string().regex(/^\d+$/).transform(Number).refine(val => val >= 1 && val <= 100, {
+    message: "Limit must be between 1 and 100"
+  }).optional().default('10'),
+  offset: z.string().regex(/^\d+$/).transform(Number).refine(val => val >= 0, {
+    message: "Offset must be non-negative"
+  }).optional().default('0'),
+});
+
 // Middleware for request validation
 const validateTaskParams = (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -90,6 +103,24 @@ const validateTaskUpdate = (req: Request, res: Response, next: NextFunction) => 
         success: false,
         error: 'Validation failed',
         details: error.errors.map(e => e.message).join(', '),
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
+const validateOverdueQuery = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsedQuery = OverdueTasksQuerySchema.parse(req.query);
+    (req as any).validatedQuery = parsedQuery;
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid query parameters',
+        details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
       });
       return;
     }
@@ -184,6 +215,32 @@ router.get('/tasks', validateTaskQuery, async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /tasks/overdue
+ * Get overdue tasks with query parameters
+ */
+router.get('/tasks/overdue', validateOverdueQuery, async (req: Request, res: Response) => {
+  try {
+    const query = (req as any).validatedQuery;
+    const result = await taskService.getOverdueTasks(query);
+    
+    if (!result.success) {
+      res.status(500).json({
+        success: false,
+        error: result.error,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: result.data,
+    });
+  } catch (error) {
+    handleServiceError(error, res);
+  }
+});
+
+/**
  * GET /tasks/:id
  * Get a single task by ID
  */
@@ -234,31 +291,6 @@ router.get('/tasks/user/:userId', async (req: Request, res: Response) => {
     }
 
     const result = await taskService.getTasksByUser(userId);
-    
-    if (!result.success) {
-      res.status(400).json({
-        success: false,
-        error: result.error,
-      });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      data: result.data,
-    });
-  } catch (error) {
-    handleServiceError(error, res);
-  }
-});
-
-/**
- * GET /tasks/overdue
- * Get overdue tasks
- */
-router.get('/tasks/overdue', async (_req: Request, res: Response) => {
-  try {
-    const result = await taskService.getOverdueTasks();
     
     if (!result.success) {
       res.status(400).json({

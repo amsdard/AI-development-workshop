@@ -192,7 +192,14 @@ describe('TaskService', () => {
       
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(Array.isArray(result.data)).toBe(true);
+      if (result.data) {
+        expect(result.data.tasks).toBeDefined();
+        expect(Array.isArray(result.data.tasks)).toBe(true);
+        expect(typeof result.data.total).toBe('number');
+        expect(typeof result.data.limit).toBe('number');
+        expect(typeof result.data.offset).toBe('number');
+        expect(typeof result.data.hasMore).toBe('boolean');
+      }
     });
   });
 

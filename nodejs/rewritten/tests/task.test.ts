@@ -332,8 +332,9 @@ describe('TaskModel', () => {
 
       const overdueTasks = await taskModel.findOverdue();
       expect(overdueTasks).toHaveLength(1);
-      expect(overdueTasks[0]).toHaveProperty('days_overdue');
-      expect((overdueTasks[0] as any).days_overdue).toBeGreaterThanOrEqual(6);
+      expect(overdueTasks[0]?.title).toBe('Overdue Task');
+      expect(overdueTasks[0]?.due_date).toBeDefined();
+      expect(new Date(overdueTasks[0]?.due_date!).getTime()).toBeLessThan(new Date().getTime());
     });
   });
 

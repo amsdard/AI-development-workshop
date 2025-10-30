@@ -174,14 +174,244 @@ describe('Tasks Routes', () => {
   });
 
   describe('GET /api/tasks/overdue', () => {
-    it('should return overdue tasks successfully', async () => {
+    it('should return overdue tasks with default parameters', async () => {
       const response = await request(app)
         .get('/api/tasks/overdue')
         .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.tasks).toBeDefined();
+      expect(Array.isArray(response.body.data.tasks)).toBe(true);
+      expect(typeof response.body.data.total).toBe('number');
+      expect(response.body.data.limit).toBe(10);
+      expect(response.body.data.offset).toBe(0);
+      expect(typeof response.body.data.hasMore).toBe('boolean');
+    });
+
+    it('should return overdue tasks with custom parameters', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?days=7&limit=5&offset=0')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.tasks).toBeDefined();
+      expect(Array.isArray(response.body.data.tasks)).toBe(true);
+      expect(response.body.data.limit).toBe(5);
+      expect(response.body.data.offset).toBe(0);
+    });
+
+    it('should return overdue tasks with days parameter', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?days=30')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.tasks).toBeDefined();
+      expect(Array.isArray(response.body.data.tasks)).toBe(true);
+    });
+
+    it('should return overdue tasks with pagination', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?limit=2&offset=0')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.tasks).toBeDefined();
+      expect(Array.isArray(response.body.data.tasks)).toBe(true);
+      expect(response.body.data.limit).toBe(2);
+      expect(response.body.data.offset).toBe(0);
+    });
+
+    it('should include days_overdue in task objects', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.tasks).toBeDefined();
+      
+      if (response.body.data.tasks.length > 0) {
+        const task = response.body.data.tasks[0];
+        expect(typeof task.days_overdue).toBe('number');
+        expect(task.days_overdue).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('should validate days parameter - negative value', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?days=-1')
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Invalid query parameters');
+    });
+
+    it('should validate days parameter - non-numeric value', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?days=abc')
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Invalid query parameters');
+    });
+
+    it('should validate limit parameter - too high value', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?limit=101')
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Invalid query parameters');
+    });
+
+    it('should validate limit parameter - negative value', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?limit=-1')
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Invalid query parameters');
+    });
+
+    it('should validate limit parameter - non-numeric value', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?limit=abc')
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Invalid query parameters');
+    });
+
+    it('should validate offset parameter - negative value', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?offset=-1')
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Invalid query parameters');
+    });
+
+    it('should validate offset parameter - non-numeric value', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?offset=abc')
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Invalid query parameters');
+    });
+
+    it('should handle multiple invalid parameters', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?days=abc&limit=xyz&offset=def')
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Invalid query parameters');
+      expect(response.body.details).toBeDefined();
+    });
+
+    it('should return empty array when no overdue tasks', async () => {
+      // This test assumes there are no overdue tasks in the test database
+      const response = await request(app)
+        .get('/api/tasks/overdue?days=365')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.tasks).toBeDefined();
+      expect(Array.isArray(response.body.data.tasks)).toBe(true);
+      expect(response.body.data.total).toBe(0);
+      expect(response.body.data.hasMore).toBe(false);
+    });
+
+    it('should handle hasMore flag correctly', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?limit=1&offset=0')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(typeof response.body.data.hasMore).toBe('boolean');
+      
+      // hasMore should be true if total > offset + limit
+      const expectedHasMore = response.body.data.total > (response.body.data.offset + response.body.data.limit);
+      expect(response.body.data.hasMore).toBe(expectedHasMore);
+    });
+
+    it('should sort tasks by due_date ascending', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?limit=10')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.tasks).toBeDefined();
+      
+      if (response.body.data.tasks.length > 1) {
+        const tasks = response.body.data.tasks;
+        for (let i = 1; i < tasks.length; i++) {
+          const prevDueDate = new Date(tasks[i-1].due_date);
+          const currDueDate = new Date(tasks[i].due_date);
+          expect(prevDueDate.getTime()).toBeLessThanOrEqual(currDueDate.getTime());
+        }
+      }
+    });
+
+    it('should only return non-completed tasks', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.tasks).toBeDefined();
+      
+      response.body.data.tasks.forEach((task: any) => {
+        expect(task.status).not.toBe('completed');
+      });
+    });
+
+    it('should only return tasks with due_date', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.tasks).toBeDefined();
+      
+      response.body.data.tasks.forEach((task: any) => {
+        expect(task.due_date).toBeDefined();
+        expect(task.due_date).not.toBeNull();
+      });
+    });
+
+    it('should handle edge case with days=0', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?days=0')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.tasks).toBeDefined();
+      expect(Array.isArray(response.body.data.tasks)).toBe(true);
+    });
+
+    it('should handle large offset values', async () => {
+      const response = await request(app)
+        .get('/api/tasks/overdue?offset=1000')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.tasks).toBeDefined();
+      expect(Array.isArray(response.body.data.tasks)).toBe(true);
+      expect(response.body.data.offset).toBe(1000);
     });
   });
 

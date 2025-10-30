@@ -33,6 +33,20 @@ export interface TaskFilters {
   sortOrder?: 'asc' | 'desc';
 }
 
+export interface OverdueTasksQuery {
+  days?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export interface OverdueTasksResponse {
+  tasks: Array<Task & { days_overdue: number }>;
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
 export interface TaskStats {
   total: number;
   pending: number;
@@ -72,6 +86,12 @@ export const TaskFiltersSchema = z.object({
   limit: z.number().int().optional().default(10).transform(val => val < 1 ? 10 : val > 100 ? 100 : val),
   sortBy: z.enum(['title', 'status', 'priority', 'due_date', 'created_at', 'updated_at']).optional().default('created_at'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+});
+
+export const OverdueTasksQuerySchema = z.object({
+  days: z.number().int().min(0).optional().default(0),
+  limit: z.number().int().min(1).max(100).optional().default(10),
+  offset: z.number().int().min(0).optional().default(0),
 });
 
 export class TaskService {
@@ -247,22 +267,41 @@ export class TaskService {
   }
 
   /**
-   * Get overdue tasks
+   * Get overdue tasks with query parameters
    */
-  async getOverdueTasks(): Promise<TaskServiceResponse<Task[]>> {
+  async getOverdueTasks(query: OverdueTasksQuery = {}): Promise<TaskServiceResponse<OverdueTasksResponse>> {
     try {
-      const tasks = await taskModel.findAll();
-      const now = new Date();
+      // Validate query parameters
+      const validatedQuery = OverdueTasksQuerySchema.parse(query);
       
-      const overdueTasks = tasks.filter((task: Task) => 
-        task.due_date && 
-        new Date(task.due_date) < now && 
-        task.status !== 'completed'
+      // Get overdue tasks from database with pagination
+      const tasks = await taskModel.findOverdue(
+        validatedQuery.days,
+        validatedQuery.limit,
+        validatedQuery.offset
       );
+      
+      // Get total count for pagination
+      const total = await taskModel.countOverdue(validatedQuery.days);
+      
+      // Calculate days_overdue for each task
+      const tasksWithDaysOverdue = tasks.map(task => ({
+        ...task,
+        days_overdue: task.due_date ? TaskModel.calculateDaysOverdue(task.due_date) : 0
+      }));
+      
+      // Calculate hasMore flag
+      const hasMore = (validatedQuery.offset + validatedQuery.limit) < total;
       
       return {
         success: true,
-        data: overdueTasks,
+        data: {
+          tasks: tasksWithDaysOverdue,
+          total,
+          limit: validatedQuery.limit,
+          offset: validatedQuery.offset,
+          hasMore
+        },
       };
     } catch (error) {
       return {
